@@ -1,8 +1,4 @@
-'''
-Created by: Kevin De Angeli
-Email: Kevindeangeli@utk.edu
-Date: 10/20/20
-'''
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
