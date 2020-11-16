@@ -98,10 +98,10 @@ class Parameters():
 if __name__ == "__main__":
     map_s = 10
     agent_loc= (0,0)
-    obstacle_loc_lst = [(2,2),(5,5),(6,5)]
-    optimal_exit = (9,9)
-    maze_exits_suboptimal = [(0,9), (9,0)]
-    pause = 3 #seconds
+    obstacle_loc_lst = [(0,3),(0,4),(9,3),(8,4),(4,6),(5,7),(2,9),(0,8),(8,9)]
+    optimal_exit = (7,7)
+    maze_exits_suboptimal = [(9,0), (0,9)]
+    pause = 10 #seconds
 
     drawWorld(map_size=map_s, agent_loc=agent_loc, obstacle_loc_lst=obstacle_loc_lst,optimal_exit=optimal_exit,maze_exits_suboptimal=maze_exits_suboptimal, pause = pause)
     #plt.pause(1)
