@@ -1,8 +1,8 @@
 import numpy as np
 import numpy.random as nr
 import time
-
 import matplotlib.pyplot as plt
+
 
 def step_model(state, a):
     #Take a state and an action, return the next state, reward, and whether
