@@ -7,6 +7,10 @@ import matplotlib.pyplot as plt
 def step_model(state, a):
     #Take a state and an action, return the next state, reward, and whether
     #the terminal state was entered
+    
+    if(nr.rand() >= 0.70):
+        a= nr.choice(np.delete(A,a))
+    
     row= state[0]
     col= state[1]
     
@@ -53,7 +57,7 @@ def QL_episode(Q, state= None):
             Q[state_act]= Q[state_act] + alpha*(r - Q[state_act])
             break
         else:
-            Q[state_act]= Q[state_act] + alpha*(r + np.max(Q[tuple(next_state)]) - Q[state_act])
+            Q[state_act]= Q[state_act] + alpha*(r + gamma*np.max(Q[tuple(next_state)]) - Q[state_act])
             state= next_state
             
     return Q,G
@@ -75,18 +79,19 @@ def teach_model(Q,N_episodes):
     #MC = 1 Use Monte-Carlo, MC = 0 Use Q-Learning
     #e_greedy input: 1 if using epsilon-greedy. 0 if using random uniform policy
     G_arr= []
-    ti= time.time()
-    for n in range(N_episodes):
-        Q,G= QL_episode(Q)
-        G_arr.append(G)
-    G=0
-    G_avg_arr= []
-    for n,g in enumerate(G_arr):
-        G+= g
-        if( n > 1 and n % 100 == 0):
-           G_avg_arr.append(G/100)
-           G=0
-    plt.plot(range(0,len(G_avg_arr)),G_avg_arr)
+    try:
+        for n in range(N_episodes):
+            Q,G= QL_episode(Q)
+            G_arr.append(G)
+    finally:
+        G=0
+        G_avg_arr= []
+        for n,g in enumerate(G_arr):
+            G+= g
+            if( n > 1 and n % 100 == 0):
+               G_avg_arr.append(G/100)
+               G=0
+        plt.plot(range(0,len(G_avg_arr)),G_avg_arr)
 
 #Parameters defined globally 
 grid_size= 10
@@ -98,7 +103,9 @@ obstacle_list=[(3,0),(4,0),(8,0),(9,2),(6,4),(7,5),(3,9),(4,8),(9,8)]
 
 A= np.array([0,1,2,3])
 
-epsilon=0.9
-alpha= 0.95
+epsilon=0.1
+alpha= 0.1
+gamma= 0.98
 
-Q= teach_model(np.zeros([grid_size, grid_size, 4]),10000)
+
+Q= teach_model(np.zeros([grid_size, grid_size, 4]),50000)
