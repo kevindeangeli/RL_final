@@ -35,47 +35,15 @@ def drawWorld(map_size=5, agent_loc=(0,0), obstacle_loc_lst=[(3,3)],optimal_exit
         for idx2,yi in enumerate(yy):
             if (idx1,idx2) == agent_loc:
                 sq = patches.Rectangle((xi, yi), wid, hei, fill=True, color="blue")
-                # ax.text(0.5, 0.5 , 'middle',
-                #         horizontalalignment='center',
-                #         verticalalignment='center',
-                #         transform=ax.transAxes)
 
             elif (idx1,idx2) in obstacle_loc_lst:
                 sq = patches.Rectangle((xi, yi), wid, hei, fill=True, color="red")
-                # ax.text(.125+0.175*(xi+1), .125+0.175*(yi+1),'C',
-                #         horizontalalignment='center',
-                #         verticalalignment='center',
-                #         transform=ax.transAxes)
             elif (idx1,idx2) == optimal_exit:
                 sq = patches.Rectangle((xi, yi), wid, hei, fill=True, color="black")
-                # ax.text(.125+0.175*(xi+1), .125+0.175*(yi+1),'A',
-                #         horizontalalignment='center',
-                #         verticalalignment='center',
-                #         transform=ax.transAxes)
             elif (idx1,idx2)  in maze_exits_suboptimal:
                 sq = patches.Rectangle((xi, yi), wid, hei, fill=True, color="yellow")
-                # #ax.text(.125*2.5, .125*2.5,'B',
-                # ax.text(.125+0.1875, .125+0.1875,'B',
-                #         horizontalalignment='center',
-                #         verticalalignment='center',
-                #         transform=ax.transAxes)
             else:
                 sq = patches.Rectangle((xi, yi), wid, hei, fill=True, color="green")
-
-            #This is a failed attempt to name the squares. It will require a lot of trial and error to get
-            #the letters centerd in each square but can be done.
-            # shift = 0.185
-            # initial = .125
-            # ax.text(initial,initial, 'X',
-            #         horizontalalignment='center',
-            #         verticalalignment='center',
-            #         transform=ax.transAxes)
-            #
-            # ax.text(initial,initial+shift*4, 'D',
-            #         horizontalalignment='center',
-            #         verticalalignment='center',
-            #         transform=ax.transAxes)
-
             ax.add_patch(sq)
 
     pc = coll.PatchCollection(pat)
@@ -104,7 +72,6 @@ if __name__ == "__main__":
     pause = 10 #seconds
 
     drawWorld(map_size=map_s, agent_loc=agent_loc, obstacle_loc_lst=obstacle_loc_lst,optimal_exit=optimal_exit,maze_exits_suboptimal=maze_exits_suboptimal, pause = pause)
-    #plt.pause(1)
 
 
 
