@@ -111,7 +111,7 @@ def QL_episode(Q, exploration, state=None, ):
         if exploration == "epsilongGreedy":
             a = epsilon_greedy(state, Q)
         elif exploration == "UCB":
-            a=-1
+            a = UCB(state,Q)
 
         state_act = tuple(state + [a])
         next_state, r, terminate = step_model(tuple(state), a)
@@ -161,14 +161,14 @@ def UCB(state,Q):
 
 
 
-def teach_model(Q, N_episodes):
+def teach_model(Q, N_episodes, exploration= "epsilongGreedy"):
     # Teach the model on N_episodes.
     # MC = 1 Use Monte-Carlo, MC = 0 Use Q-Learning
     # e_greedy input: 1 if using epsilon-greedy. 0 if using random uniform policy
     G_arr = []
     try:
         for n in range(N_episodes):
-            Q, G = QL_episode(Q, "epsilongGreedy")
+            Q, G = QL_episode(Q, exploration)
             G_arr.append(G)
     finally:
         G = 0
