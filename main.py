@@ -99,7 +99,7 @@ def step_model(state, a):
         return list(next_state), 0, 0
 
 
-def QL_episode(Q, state=None):
+def QL_episode(Q, exploration, state=None, ):
     # Perform Q learning episode (pg. 131)
     # e_greedy input: 1 if using epsilon-greedy. 0 if using random uniform policy
     if (state is None):
@@ -108,7 +108,11 @@ def QL_episode(Q, state=None):
 
     G = 0
     for x in range(1000):
-        a = epsilon_greedy(state, Q)
+        if exploration == "epsilongGreedy":
+            a = epsilon_greedy(state, Q)
+        elif exploration == "UCB":
+            a=-1
+
         state_act = tuple(state + [a])
         next_state, r, terminate = step_model(tuple(state), a)
 
@@ -135,6 +139,27 @@ def epsilon_greedy(state, Q):
 
     return a
 
+def UCB(state,Q):
+    #First Select all actions at least once.
+    actions_count = UCB_param.QA_COUNT_UCB[state[0],state[1]] #1x4 row
+    if 0 in actions_count:
+        a= np.where(actions_count == 0)[0][0] #pick one of the action that were not executed yet.
+        return a
+
+    else:
+        action_values_arr = []#1,4 array
+        for i in range(4):
+            ratio = np.sqrt((2*np.log(np.sum(actions_count))/actions_count[i]))
+            bonus = 100*UCB_param.C*ratio
+            total = Q[state[0],state[1],i] + bonus
+            action_values_arr.append(total)
+
+
+    a = np.argmax(action_values_arr)
+    UCB_param.QA_COUNT_UCB[state[0], state[1],a] +=1 #Update the action count array.
+    return a
+
+
 
 def teach_model(Q, N_episodes):
     # Teach the model on N_episodes.
@@ -143,7 +168,7 @@ def teach_model(Q, N_episodes):
     G_arr = []
     try:
         for n in range(N_episodes):
-            Q, G = QL_episode(Q)
+            Q, G = QL_episode(Q, "epsilongGreedy")
             G_arr.append(G)
     finally:
         G = 0
@@ -154,7 +179,7 @@ def teach_model(Q, N_episodes):
                 G_avg_arr.append(G / 100)
                 G = 0
         plt.plot(range(0, len(G_avg_arr)), G_avg_arr)
-        plt.show()
+        #plt.show()
 
     return Q
 
@@ -196,6 +221,12 @@ def test_model(Q, greedy= True):
                   optimal_exit=terminal_list[-1], maze_exits_suboptimal=terminal_list[0:-1], pause=pause)
 
 
+#UCB Parameters
+class UCB_Params():
+    def __init__(self):
+        self.QA_COUNT_UCB = np.zeros([grid_size, grid_size, 4]) #This is a variable used during UCB
+        self.C = 1
+
 # Parameters defined globally
 grid_size = 10
 start_state = (0, 0)
@@ -203,8 +234,11 @@ start_state = (0, 0)
 terminal_list = [(9,0), (0,9), (7, 7)]
 rewards_list = [0.5, 0.5, 1]
 obstacle_list = [(0,3),(0,4),(9,3),(8,4),(4,6),(5,7),(2,9),(0,8),(8,9)]
-
 A = np.array([0, 1, 2, 3])
+
+
+#UCB Parameters:
+UCB_param = UCB_Params()
 
 epsilon = 0.1
 alpha = 0.1
