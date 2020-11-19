@@ -140,16 +140,17 @@ def epsilon_greedy(state, Q):
     return a
 
 def UCB(state,Q):
-    #First Select all actions at least once.
+    #First Select all actions once.
     actions_count = UCB_param.QA_COUNT_UCB[state[0],state[1]] #1x4 row
     if 0 in actions_count:
         a= np.where(actions_count == 0)[0][0] #pick one of the action that were not executed yet.
+        UCB_param.QA_COUNT_UCB[state[0], state[1], a] += 1  # Update the action count array.
         return a
 
     else:
         action_values_arr = []#1,4 array
         for i in range(4):
-            ratio = np.sqrt((2*np.log(np.sum(actions_count))/actions_count[i]))
+            ratio = np.sqrt(2*np.log(np.sum(actions_count))/actions_count[i])
             bonus = 100*UCB_param.C*ratio
             total = Q[state[0],state[1],i] + bonus
             action_values_arr.append(total)
@@ -166,8 +167,12 @@ def teach_model(Q, N_episodes, exploration= "epsilongGreedy"):
     # MC = 1 Use Monte-Carlo, MC = 0 Use Q-Learning
     # e_greedy input: 1 if using epsilon-greedy. 0 if using random uniform policy
     G_arr = []
+    print("Using: ", exploration)
+
     try:
         for n in range(N_episodes):
+            if n%100 == 0:
+                print("Episode: ", n)
             Q, G = QL_episode(Q, exploration)
             G_arr.append(G)
     finally:
@@ -179,7 +184,7 @@ def teach_model(Q, N_episodes, exploration= "epsilongGreedy"):
                 G_avg_arr.append(G / 100)
                 G = 0
         plt.plot(range(0, len(G_avg_arr)), G_avg_arr)
-        #plt.show()
+        plt.show()
 
     return Q
 
@@ -191,6 +196,8 @@ def test_model(Q, greedy= True):
     state = start_state
     drawWorld(map_size=grid_size, agent_loc=state, obstacle_loc_lst=obstacle_list, optimal_exit=terminal_list[-1],
               maze_exits_suboptimal=terminal_list[0:-1], pause=pause)
+    plt.savefig("test_images/fig0")
+    i=1
 
     while state != (-1,-1):
         if greedy is True:
@@ -219,6 +226,8 @@ def test_model(Q, greedy= True):
         state = next_state
         drawWorld(map_size=grid_size, agent_loc=state, obstacle_loc_lst=obstacle_list,
                   optimal_exit=terminal_list[-1], maze_exits_suboptimal=terminal_list[0:-1], pause=pause)
+        plt.savefig("test_images/fig"+str(i))
+        i +=1
 
 
 #UCB Parameters
@@ -249,8 +258,11 @@ if __name__ == "__main__":
 
     #drawWorld(map_size=grid_size, agent_loc=start_state, obstacle_loc_lst=obstacle_list,optimal_exit=terminal_list[-1],maze_exits_suboptimal=terminal_list[0:-1], pause = pause)
 
-    Q = teach_model(np.zeros([grid_size, grid_size, 4]), 5000)
+    #exploration options
+    exploration = ["epsilongGreedy","UCB"]
+    Q = teach_model(np.zeros([grid_size, grid_size, 4]), 50000,exploration=exploration[1])
     test_model(Q)
+
 
 
 
