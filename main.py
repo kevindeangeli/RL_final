@@ -160,6 +160,25 @@ def UCB(state,Q):
     UCB_param.QA_COUNT_UCB[state[0], state[1],a] +=1 #Update the action count array.
     return a
 
+def Pursuit(state,Q):
+    actions_values = Q[state[0],state[1]] #1x4 row
+    select_prob = []
+    for i in range(4):
+        select_prob.append(actions_values[i]+Pursuit_param.B*(0-actions_values[i]))
+
+    max_act = np.argmax(actions_values)
+    select_prob[max_act] = actions_values[max_act]+Pursuit_param.B*(1-actions_values[max_act])
+
+
+    #a= np.random.choice(A, 1, p=action_probabilities)[0]
+    # I'm a little confused about this. I have to come back. 
+    return -1
+
+
+
+
+
+
 
 
 def teach_model(Q, N_episodes, exploration= "epsilongGreedy"):
@@ -236,6 +255,12 @@ class UCB_Params():
         self.QA_COUNT_UCB = np.zeros([grid_size, grid_size, 4]) #This is a variable used during UCB
         self.C = 1
 
+#pursuit Parameters
+class pursuit_Params():
+    def __init__(self):
+        self.B=.1
+
+
 # Parameters defined globally
 grid_size = 10
 start_state = (0, 0)
@@ -248,6 +273,8 @@ A = np.array([0, 1, 2, 3])
 
 #UCB Parameters:
 UCB_param = UCB_Params()
+#Pursuit Parameters:
+Pursuit_param=pursuit_Params()
 
 epsilon = 0.1
 alpha = 0.1
@@ -259,7 +286,7 @@ if __name__ == "__main__":
     #drawWorld(map_size=grid_size, agent_loc=start_state, obstacle_loc_lst=obstacle_list,optimal_exit=terminal_list[-1],maze_exits_suboptimal=terminal_list[0:-1], pause = pause)
 
     #exploration options
-    exploration = ["epsilongGreedy","UCB"]
+    exploration = ["epsilongGreedy","UCB","pursuit"]
     Q = teach_model(np.zeros([grid_size, grid_size, 4]), 50000,exploration=exploration[1])
     test_model(Q)
 
