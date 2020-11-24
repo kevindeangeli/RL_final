@@ -68,7 +68,7 @@ def step_model(state, a):
     # the terminal state was entered
 
     if (nr.rand() >= 0.70):
-        a = nr.choice(np.delete(A, a))
+       a = nr.choice(np.delete(A, a))
 
     row = state[0]
     col = state[1]
@@ -172,8 +172,8 @@ def Pursuit(state,Q):
     max_act = np.argmax(actions_values)
     new_select_prob[max_act] = selection_probs[max_act]+Pursuit_param.B*(1-selection_probs[max_act])
 
-    #print(new_select_prob)
-    #print("Probs: ", np.sum(new_select_prob))
+    print(new_select_prob)
+    print("Probs: ", np.sum(new_select_prob))
     a= np.random.choice(A, 1, p=new_select_prob)[0]
 
     return a
@@ -191,23 +191,25 @@ def teach_model(Q, N_episodes, exploration= "epsilongGreedy"):
     # e_greedy input: 1 if using epsilon-greedy. 0 if using random uniform policy
     G_arr = []
     print("Using: ", exploration)
-
-    try:
-        for n in range(N_episodes):
-            if n%100 == 0:
-                print("Episode: ", n)
-            Q, G = QL_episode(Q, exploration)
+    for n in range(N_episodes):
+        if n%100 == 0:
+            print("Episode: ", n)
+        Q, G = QL_episode(Q, exploration)
+        if n>=2900:
             G_arr.append(G)
-    finally:
-        G = 0
-        G_avg_arr = []
-        for n, g in enumerate(G_arr):
-            G += g
-            if (n > 1 and n % 100 == 0):
-                G_avg_arr.append(G / 100)
-                G = 0
-        plt.plot(range(0, len(G_avg_arr)), G_avg_arr)
-        plt.show()
+
+    RETURNS_ARR.append(G_arr)
+
+    # finally:
+    #     G = 0
+    #     G_avg_arr = []
+    #     for n, g in enumerate(G_arr):
+    #         G += g
+    #         if (n > 1 and n % 100 == 0):
+    #             G_avg_arr.append(G / 100)
+    #             G = 0
+    #     plt.plot(range(0, len(G_avg_arr)), G_avg_arr)
+        #plt.show()
 
     return Q
 
@@ -267,7 +269,6 @@ class pursuit_Params():
 
 
 
-
 # Parameters defined globally
 grid_size = 10
 start_state = (0, 0)
@@ -276,7 +277,6 @@ terminal_list = [(9,0), (0,9), (7, 7)]
 rewards_list = [0.5, 0.5, 1]
 obstacle_list = [(0,3),(0,4),(9,3),(8,4),(4,6),(5,7),(2,9),(0,8),(8,9)]
 A = np.array([0, 1, 2, 3])
-
 
 #UCB Parameters:
 UCB_param = UCB_Params()
@@ -288,14 +288,37 @@ alpha = 0.1
 gamma = 0.98
 pause = 0.01  # seconds
 
-if __name__ == "__main__":
+import pickle
+RETURNS_ARR = []
+exploration = ["epsilongGreedy","UCB","pursuit"]
 
-    #drawWorld(map_size=grid_size, agent_loc=start_state, obstacle_loc_lst=obstacle_list,optimal_exit=terminal_list[-1],maze_exits_suboptimal=terminal_list[0:-1], pause = pause)
+for i in range(10):
+    print("Maze Number: ", i)
+    random_maze = pickle.load(open("valid_courses.p", "rb"))
+    obstacle_list = random_maze[i]
+    drawWorld(map_size=grid_size, agent_loc=start_state, obstacle_loc_lst=obstacle_list,optimal_exit=terminal_list[-1],maze_exits_suboptimal=terminal_list[0:-1], pause = pause)
+    plt.close()
+    for k in range(3):
+        print("Trial Number: ", i, "/3")
+        UCB_param = UCB_Params()
+        Pursuit_param = pursuit_Params()
+
+        Q = teach_model(np.zeros([grid_size, grid_size, 4]), 3000,exploration=exploration[2])
+
+print("Size: ", len(np.array(RETURNS_ARR).flatten()))
+print("Average: ", np.average(RETURNS_ARR))
+print("STD: ", np.std(RETURNS_ARR))
+
+
+
+#if __name__ == "__main__":
+
 
     #exploration options
-    exploration = ["epsilongGreedy","UCB","pursuit"]
-    Q = teach_model(np.zeros([grid_size, grid_size, 4]), 50000,exploration=exploration[2])
-    test_model(Q)
+    #exploration = ["epsilongGreedy","UCB","pursuit"]
+    #Q = teach_model(np.zeros([grid_size, grid_size, 4]), 3000,exploration=exploration[1])
+    #test_model(Q)
+
 
 
 
