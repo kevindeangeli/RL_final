@@ -134,7 +134,7 @@ def epsilon_greedy(state, Q):
     # Ties between the best actions are broken randomly.
 
     best_action = nr.choice(np.flatnonzero(Q[tuple(state)] == Q[tuple(state)].max()))
-    if (nr.rand() < 1 - epsilon + (epsilon / grid_size)):
+    if (nr.rand() < 1 - epsilon):
         a = best_action
     else:
         a = nr.choice(np.delete(A, best_action))
@@ -172,8 +172,8 @@ def Pursuit(state,Q):
     max_act = np.argmax(actions_values)
     new_select_prob[max_act] = selection_probs[max_act]+Pursuit_param.B*(1-selection_probs[max_act])
 
-    print(new_select_prob)
-    print("Probs: ", np.sum(new_select_prob))
+    #print(new_select_prob)
+    #print("Probs: ", np.sum(new_select_prob))
     a= np.random.choice(A, 1, p=new_select_prob)[0]
 
     return a
@@ -283,8 +283,8 @@ UCB_param = UCB_Params()
 #Pursuit Parameters:
 Pursuit_param=pursuit_Params()
 
-epsilon = 0.1
-alpha = 0.1
+epsilon = 0.29
+alpha = 0.95
 gamma = 0.98
 pause = 0.01  # seconds
 
@@ -299,11 +299,11 @@ for i in range(10):
     drawWorld(map_size=grid_size, agent_loc=start_state, obstacle_loc_lst=obstacle_list,optimal_exit=terminal_list[-1],maze_exits_suboptimal=terminal_list[0:-1], pause = pause)
     plt.close()
     for k in range(3):
-        print("Trial Number: ", i, "/3")
+        print("Trial Number: ", k, "/3")
         UCB_param = UCB_Params()
         Pursuit_param = pursuit_Params()
 
-        Q = teach_model(np.zeros([grid_size, grid_size, 4]), 3000,exploration=exploration[2])
+        Q = teach_model(np.zeros([grid_size, grid_size, 4]), 3000,exploration=exploration[0])
 
 print("Size: ", len(np.array(RETURNS_ARR).flatten()))
 print("Average: ", np.average(RETURNS_ARR))
