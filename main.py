@@ -8,6 +8,7 @@ import argparse
 import time
 import sys
 import pickle
+import pandas as pd
 
 
 def drawWorld(map_size=5, agent_loc=(0,0), obstacle_loc_lst=[(3,3)],optimal_exit=(1,1),maze_exits_suboptimal=[(4,4)], pause = 2):
@@ -137,7 +138,7 @@ def QL_episode(Q, exploration, state=None, ):
             Q[state_act] = Q[state_act] + alpha * (r + gamma * np.max(Q[tuple(next_state)]) - Q[state_act])
             state = next_state
 
-    return Q, G
+    return Q, G, x
 
 
 def epsilon_greedy(state, Q):
@@ -145,7 +146,7 @@ def epsilon_greedy(state, Q):
     # Ties between the best actions are broken randomly.
 
     best_action = nr.choice(np.flatnonzero(Q[tuple(state)] == Q[tuple(state)].max()))
-    if (nr.rand() < 1 - epsilon):
+    if (nr.rand() < 1 - p2):
         a = best_action
     else:
         a = nr.choice(np.delete(A, best_action))
@@ -182,7 +183,9 @@ def Pursuit(state,Q):
 
     max_act = np.argmax(actions_values)
     new_select_prob[max_act] = selection_probs[max_act]+Pursuit_param.B*(1-selection_probs[max_act])
-
+    
+    Pursuit_param.SelectionProb[state[0],state[1]] = new_select_prob
+    
     #print(new_select_prob)
     #print("Probs: ", np.sum(new_select_prob))
     a= np.random.choice(A, 1, p=new_select_prob)[0]
@@ -192,7 +195,7 @@ def Pursuit(state,Q):
 
 def softmax(state,Q):
     act_vals= Q[tuple(state)]
-    num= np.exp(act_vals / temp)
+    num= np.exp(act_vals / p2)
     act_dist= num / np.sum(num)
     return nr.choice(A, p= act_dist)
 
@@ -202,17 +205,18 @@ def teach_model(Q, N_episodes, exploration= "epsilongGreedy"):
     # MC = 1 Use Monte-Carlo, MC = 0 Use Q-Learning
     # e_greedy input: 1 if using epsilon-greedy. 0 if using random uniform policy
     G_arr = []
+    steps_arr= []
     print("Using: ", exploration)
     for n in range(N_episodes):
         if n%100 == 0:
             print("Episode: ", n)
-        Q, G = QL_episode(Q, exploration)
+        Q, G, steps = QL_episode(Q, exploration)
         if n>=2900:
             G_arr.append(G)
+            steps_arr.append(steps)
+            
 
-    RETURNS_ARR.append(G_arr)
-
-    return Q
+    return G_arr, steps_arr
 
 def test_model(Q, greedy= True):
     state = start_state
@@ -260,8 +264,8 @@ def search_params(search_options):
     # exploration_params[type][column # from table III]
     exploration_params= {'UCB' : {0: (.16,0.007), 1: (.1, .007), 2: (.16,.69), 3: (.1, 1.19)},
              'epsilonGreedy' : {0: (.95,.29), 1: (.83, .36), 2: (.59,.20), 3: (.65,.15)},
-             'pursuit' : {0: (.16,.12), 1: (.1,.12), 2: (.1,8.79), 3: (.1,8.79)},
-             'softmax' : {0: (.95,.007), 1: (.95,.007), 2: (.65, .007), 3: (.59, .007)}}
+             'softmax' : {0: (.16,.12), 1: (.1,.12), 2: (.1,8.79), 3: (.1,8.79)},
+             'pursuit' : {0: (.95,.007), 1: (.95,.007), 2: (.65, .007), 3: (.59, .007)}}
     
     if(search_options[1]):
         if(search_options[2]):
@@ -284,6 +288,34 @@ def init_Q(search_options):
             return np.ones([grid_size, grid_size, 4])
         else:
             return 200* np.ones([grid_size, grid_size, 4])
+        
+def exec_run(SEARCH_OPTIONS):
+
+    total_R =[]
+    total_steps= []
+    for i in range(10):
+        print("Maze Number: ", i)
+        obstacle_list = random_maze[i]
+        # drawWorld(map_size=grid_size, agent_loc=start_state, obstacle_loc_lst=obstacle_list,optimal_exit=terminal_list[-1],maze_exits_suboptimal=terminal_list[0:-1], pause = pause)
+        # plt.close()
+        for k in range(3):
+            print("Trial Number: ", k, "/3")
+            Q_init= init_Q(SEARCH_OPTIONS)
+    
+            R_arr, steps_arr = teach_model(Q_init, 3000,exploration=SEARCH_OPTIONS[0])
+            
+            total_R= total_R + R_arr
+            total_steps = total_steps + steps_arr
+            
+    RETURNS_ARR= np.array(total_R).flatten()
+    STEPS_ARR= np.array(total_steps).flatten()
+    
+    print("Size: ", len(RETURNS_ARR))
+    print("Average: ", np.average(RETURNS_ARR))
+    print("STD: ", np.std(RETURNS_ARR))
+    print("Avg. Steps: ", np.average(STEPS_ARR))
+    
+    return np.average(RETURNS_ARR), np.std(RETURNS_ARR), np.average(STEPS_ARR)
     
 #UCB Parameters
 class UCB_Params():
@@ -315,33 +347,58 @@ RETURNS_ARR = []
 exploration = ["epsilonGreedy","UCB","pursuit","softmax"]
 
 random_maze = pickle.load(open("valid_courses.p", "rb"))
-
-#**** THIS SHOULD BE THE ONLY VARIABLE YOU HAVE TO MODIFY FOR ALL OPTIONS IN 
-#**** TABLE III. [0]: Exploration type. [1]: Normalized (bool). [2]: Optimistic (bool)
-SEARCH_OPTIONS= [exploration[0], False, True]
-
-alpha, p2= search_params(SEARCH_OPTIONS)
-r_type_norm= SEARCH_OPTIONS[1]
-
-try:
-    for i in range(10):
-        print("Maze Number: ", i)
-        obstacle_list = random_maze[i]
-        # drawWorld(map_size=grid_size, agent_loc=start_state, obstacle_loc_lst=obstacle_list,optimal_exit=terminal_list[-1],maze_exits_suboptimal=terminal_list[0:-1], pause = pause)
-        # plt.close()
-        for k in range(3):
-            print("Trial Number: ", k, "/3")
+rows=[]
+for e in exploration:
+    for n in [True, False]:
+        for o in [True, False]:
+            results=[]
+            #**** THIS SHOULD BE THE ONLY VARIABLE YOU HAVE TO MODIFY FOR ALL OPTIONS IN 
+            #**** TABLE III. [0]: Exploration type. [1]: Normalized (bool). [2]: Optimistic (bool)
+            SEARCH_OPTIONS= [e, n, o]
+            
+            alpha, p2= search_params(SEARCH_OPTIONS)
+            r_type_norm= SEARCH_OPTIONS[1]
+            
             UCB_param = UCB_Params(p2)
             Pursuit_param = pursuit_Params(p2)
-            epsilon= p2
-            temp= p2
             
-            Q_init= init_Q(SEARCH_OPTIONS)
-    
-            Q = teach_model(Q_init, 3000,exploration=SEARCH_OPTIONS[0])
+            total_R =[]
+            total_steps= []
+            for i in range(10):
+                print("Maze Number: ", i)
+                obstacle_list = random_maze[i]
+                # drawWorld(map_size=grid_size, agent_loc=start_state, obstacle_loc_lst=obstacle_list,optimal_exit=terminal_list[-1],maze_exits_suboptimal=terminal_list[0:-1], pause = pause)
+                # plt.close()
+                for k in range(3):
+                    print("Trial Number: ", k, "/3")
+                    Q_init= init_Q(SEARCH_OPTIONS)
+            
+                    R_arr, steps_arr = teach_model(Q_init, 3000,exploration=SEARCH_OPTIONS[0])
+                    
+                    total_R= total_R + R_arr
+                    total_steps = total_steps + steps_arr
+                    
+            RETURNS_ARR= np.array(total_R).flatten()
+            STEPS_ARR= np.array(total_steps).flatten()
+            
+            print("Size: ", len(RETURNS_ARR))
+            print("Average: ", np.average(RETURNS_ARR))
+            print("STD: ", np.std(RETURNS_ARR))
+            print("Avg. Steps: ", np.average(STEPS_ARR))
+            
+            results.append(e)
+            results.append(n)
+            results.append(o)
+            
+            results.append(np.average(RETURNS_ARR))
+            results.append(np.std(RETURNS_ARR))
+            results.append(np.average(STEPS_ARR))
+            
+            rows.append(results)
+            
+results_df= pd.DataFrame(rows, columns= ['Exploration Type','Normalized', 'Optimistic', 'Mean Reward', 'SD', 'Mean Steps'])
 
-finally:
-    RETURNS_ARR= np.array(RETURNS_ARR).flatten()
-    print("Size: ", len(RETURNS_ARR))
-    print("Average: ", np.average(RETURNS_ARR))
-    print("STD: ", np.std(RETURNS_ARR))
+print(results_df)
+            
+            
+            
