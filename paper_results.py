@@ -13,6 +13,7 @@ import numpy.random as nr
 import argparse
 import time
 import sys
+import seaborn as sns
 
 
 def drawWorld(map_size=5, agent_loc=(0,0), obstacle_loc_lst=[(3,3)],optimal_exit=(1,1),maze_exits_suboptimal=[(4,4)], pause = 2):
@@ -105,8 +106,10 @@ def QL_episode(Q, exploration, state=None, ):
     if (state is None):
         # state= list(nr.randint(0, high= grid_size, size= (1,4))[0])
         state = [0, 0]
+    STATE_HEAT_MAT[state[0],state[1]]+=1
 
     G = 0
+
     for x in range(1000):
         if exploration == "epsilongGreedy":
             a = epsilon_greedy(state, Q)
@@ -114,9 +117,13 @@ def QL_episode(Q, exploration, state=None, ):
             a = UCB(state,Q)
         elif exploration == "pursuit":
             a = Pursuit(state, Q)
+        elif exploration == "softmax":
+            a = softmax(state,Q)
 
         state_act = tuple(state + [a])
         next_state, r, terminate = step_model(tuple(state), a)
+        STATE_HEAT_MAT[next_state[0], next_state[1]] += 1
+        print(STATE_HEAT_MAT)
 
         G += r
         if terminate:
@@ -162,25 +169,30 @@ def UCB(state,Q):
     UCB_param.QA_COUNT_UCB[state[0], state[1],a] +=1 #Update the action count array.
     return a
 
-def Pursuit(state,Q):
-    actions_values = Q[state[0],state[1]] #1x4 row
-    selection_probs = Pursuit_param.SelectionProb[state[0],state[1]]
+
+def Pursuit(state, Q):
+    actions_values = Q[state[0], state[1]]  # 1x4 row
+    selection_probs = Pursuit_param.SelectionProb[state[0], state[1]]
     new_select_prob = []
     for i in range(4):
-        new_select_prob.append(selection_probs[i]+Pursuit_param.B*(0-selection_probs[i]))
+        new_select_prob.append(selection_probs[i] + Pursuit_param.B * (0 - selection_probs[i]))
 
     max_act = np.argmax(actions_values)
-    new_select_prob[max_act] = selection_probs[max_act]+Pursuit_param.B*(1-selection_probs[max_act])
+    new_select_prob[max_act] = selection_probs[max_act] + Pursuit_param.B * (1 - selection_probs[max_act])
 
-    #print(new_select_prob)
-    #print("Probs: ", np.sum(new_select_prob))
-    a= np.random.choice(A, 1, p=new_select_prob)[0]
+    Pursuit_param.SelectionProb[state[0], state[1]] = new_select_prob
 
-    return a
-
-
+    # print(new_select_prob)
+    # print("Probs: ", np.sum(new_select_prob))
+    a = np.random.choice(A, 1, p=new_select_prob)[0]
 
 
+
+def softmax(state,Q):
+    act_vals= Q[tuple(state)]
+    num= np.exp(act_vals / 0.5)
+    act_dist= num / np.sum(num)
+    return nr.choice(A, p= act_dist)
 
 
 
@@ -287,27 +299,38 @@ epsilon = 0.29
 alpha = 0.95
 gamma = 0.98
 pause = 0.01  # seconds
-
+STATE_HEAT_MAT = np.zeros((grid_size,grid_size))
 import pickle
 RETURNS_ARR = []
-exploration = ["epsilongGreedy","UCB","pursuit"]
-
-for i in range(10):
+exploration = ["epsilongGreedy","UCB","pursuit", "softmax"]
+exp_idx = 0 #select exploration index here.
+for i in range(1):
     print("Maze Number: ", i)
-    random_maze = pickle.load(open("valid_courses.p", "rb"))
-    obstacle_list = random_maze[i]
+    #random_maze = pickle.load(open("valid_courses.p", "rb"))
+    #obstacle_list = random_maze[i]
     drawWorld(map_size=grid_size, agent_loc=start_state, obstacle_loc_lst=obstacle_list,optimal_exit=terminal_list[-1],maze_exits_suboptimal=terminal_list[0:-1], pause = pause)
+    plt.savefig('heatM_maze.png', dpi=90)
     plt.close()
-    for k in range(3):
+    for k in range(1):
         print("Trial Number: ", k, "/3")
         UCB_param = UCB_Params()
         Pursuit_param = pursuit_Params()
 
-        Q = teach_model(np.zeros([grid_size, grid_size, 4]), 3000,exploration=exploration[0])
+        Q = teach_model(np.zeros([grid_size, grid_size, 4]), 3000,exploration=exploration[exp_idx])
 
-print("Size: ", len(np.array(RETURNS_ARR).flatten()))
-print("Average: ", np.average(RETURNS_ARR))
-print("STD: ", np.std(RETURNS_ARR))
+# print("Size: ", len(np.array(RETURNS_ARR).flatten()))
+# print("Average: ", np.average(RETURNS_ARR))
+# print("STD: ", np.std(RETURNS_ARR))
+
+
+print(STATE_HEAT_MAT)
+STATE_HEAT_MAT = np.rot90(STATE_HEAT_MAT)
+ax = sns.heatmap(STATE_HEAT_MAT, linewidth=0.5)
+plt.savefig(exploration[exp_idx]+'heat.png', dpi=90)
+
+plt.show()
+
+
 
 
 
