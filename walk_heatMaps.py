@@ -340,6 +340,8 @@ grid_size = 10
 start_state = (0, 0)
 
 terminal_list = [(9,0), (0,9), (7, 7)]
+#terminal_list = [(3,7), (8,2), (7, 7)]
+
 rewards_list_norm = [0.5, 0.5, 1]
 rewards_list= [50,50,200]
 A = np.array([0, 1, 2, 3])
@@ -353,6 +355,16 @@ exploration = ["epsilonGreedy","UCB","pursuit","softmax"]
 
 random_maze = pickle.load(open("valid_courses.p", "rb"))
 rows=[]
+
+#obstacle_list = random_maze[10]
+#obstacle_list = [(0, 3), (0, 4), (9, 3), (8, 4), (4, 6), (5, 7), (2, 9), (0, 8), (8, 9)]
+obstacle_list = [(7, 6), (5, 8), (9, 3), (8, 4), (5, 6), (5, 7), (2, 9), (7, 6), (6, 6)]
+
+drawWorld(map_size=grid_size, agent_loc=start_state, obstacle_loc_lst=obstacle_list, optimal_exit=terminal_list[-1],
+          maze_exits_suboptimal=terminal_list[0:-1], pause=3)
+plt.savefig('walk_heatMaps/maze3/heatM_maze.png', dpi=90)
+plt.close()
+
 for e in exploration:
     for n in [True, False]:
         for o in [True, False]:
@@ -371,11 +383,7 @@ for e in exploration:
             total_steps= []
             for i in range(1):
                 print("Maze Number: ", i)
-                #obstacle_list = random_maze[i]
-                obstacle_list = [(0, 3), (0, 4), (9, 3), (8, 4), (4, 6), (5, 7), (2, 9), (0, 8), (8, 9)]
-                drawWorld(map_size=grid_size, agent_loc=start_state, obstacle_loc_lst=obstacle_list,optimal_exit=terminal_list[-1],maze_exits_suboptimal=terminal_list[0:-1], pause = pause)
-                plt.savefig('heatM_maze.png', dpi=90)
-                plt.close()
+
                 for k in range(1):
                     print("Trial Number: ", k, "/3")
                     Q_init= init_Q(SEARCH_OPTIONS)
@@ -416,7 +424,7 @@ for e in exploration:
             heat_map_name += ".png"
             STATE_HEAT_MAT = np.rot90(STATE_HEAT_MAT)
             ax = sns.heatmap(STATE_HEAT_MAT, linewidth=0.5)
-            plt.savefig("walk_heatMaps/"+heat_map_name, dpi=90)
+            plt.savefig("walk_heatMaps/maze3/"+heat_map_name, dpi=90)
             plt.close()
             STATE_HEAT_MAT = np.zeros((grid_size, grid_size))  # Used for heat map
 
