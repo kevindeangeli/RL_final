@@ -306,7 +306,7 @@ exploration = ["epsilongGreedy","UCB","pursuit", "softmax"]
 exp_idx = 0 #select exploration index here.
 for i in range(1):
     print("Maze Number: ", i)
-    #random_maze = pickle.load(open("valid_courses.p", "rb"))
+    random_maze = pickle.load(open("valid_courses.p", "rb"))
     #obstacle_list = random_maze[i]
     drawWorld(map_size=grid_size, agent_loc=start_state, obstacle_loc_lst=obstacle_list,optimal_exit=terminal_list[-1],maze_exits_suboptimal=terminal_list[0:-1], pause = pause)
     plt.savefig('heatM_maze.png', dpi=90)
